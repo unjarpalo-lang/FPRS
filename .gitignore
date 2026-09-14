@@ -1,0 +1,7 @@
+# Firebase service-account credential — never commit this.
+storage/firebase-service-account.json
+storage/*.json
+
+# In case Composer/kreait-firebase-php gets added later (see includes/firebase_init.php)
+/vendor/
+composer.lock

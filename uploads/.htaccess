@@ -1,0 +1,6 @@
+# User-uploaded files only — never execute anything here, regardless of
+# extension. This is the backstop even if a validation bug elsewhere lets a
+# disguised script through with a .php-family extension.
+<FilesMatch "\.(php|phtml|php\d|pht|phar|cgi|pl|py|asp|aspx|sh)$">
+    Require all denied
+</FilesMatch>
