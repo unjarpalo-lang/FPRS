@@ -29,14 +29,14 @@ if ($action === 'view') {
         <?php if ($user['valid_id_path']): ?>
           <div class="mt-5">
             <div class="text-sm font-medium text-stone-700">Valid ID</div>
-            <?php render_document_viewer(__DIR__ . '/../' . ltrim($user['valid_id_path'], '/'), BASE_PATH . '/' . ltrim($user['valid_id_path'], '/'), 'Valid ID'); ?>
+            <?php render_document_viewer(__DIR__ . '/../' . ltrim($user['valid_id_path'], '/'), BASE_PATH . '/admin/serve_document.php?type=user&doc=valid_id&id=' . $id, 'Valid ID'); ?>
           </div>
         <?php endif; ?>
 
         <?php if (!empty($user['license_path'])): ?>
           <div class="mt-5">
             <div class="text-sm font-medium text-stone-700">Funeral home license</div>
-            <?php render_document_viewer(__DIR__ . '/../' . ltrim($user['license_path'], '/'), BASE_PATH . '/' . ltrim($user['license_path'], '/'), 'Funeral home license'); ?>
+            <?php render_document_viewer(__DIR__ . '/../' . ltrim($user['license_path'], '/'), BASE_PATH . '/admin/serve_document.php?type=user&doc=license&id=' . $id, 'Funeral home license'); ?>
           </div>
         <?php endif; ?>
 

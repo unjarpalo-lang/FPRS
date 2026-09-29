@@ -46,7 +46,7 @@ if ($action === 'view' && $id) {
 
             <div class="mt-5">
               <div class="text-sm font-medium text-stone-700">Business license</div>
-              <?php render_document_viewer(__DIR__ . '/../' . ltrim($parlor['license_path'], '/'), BASE_PATH . '/' . ltrim($parlor['license_path'], '/'), 'Business license'); ?>
+              <?php render_document_viewer(__DIR__ . '/../' . ltrim($parlor['license_path'], '/'), BASE_PATH . '/admin/serve_document.php?type=parlor&id=' . (int)$parlor['id'], 'Business license'); ?>
             </div>
 
             <div class="mt-6">
