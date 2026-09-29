@@ -47,6 +47,14 @@ function require_any_role(array $roles) {
     if (!$user || !in_array($user['role'],$roles,true)) { http_response_code(403); echo "Forbidden"; exit; }
 }
 
+/** Largest accepted upload, in bytes. Applied on top of PHP's own ini limits. */
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+/** True when an uploaded file is over MAX_UPLOAD_BYTES. */
+function upload_too_large(array $file): bool {
+    return (int)($file['size'] ?? 0) > MAX_UPLOAD_BYTES;
+}
+
 function first_approved_director_id(): ?int {
     $pdo = pdo_connect();
     $stmt = $pdo->prepare('SELECT id FROM users WHERE role = ? AND status = ? ORDER BY id ASC LIMIT 1');

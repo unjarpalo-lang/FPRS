@@ -33,7 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       // a content check) can let a disguised script land in uploads/ as .php.
       $allowedLicenseExtensions = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'application/pdf' => 'pdf'];
       $mime = $hasNewLicense ? (new finfo(FILEINFO_MIME_TYPE))->file($license['tmp_name']) : null;
-      if ($hasNewLicense && !isset($allowedLicenseExtensions[$mime])) {
+      if ($hasNewLicense && upload_too_large($license)) {
+            $error = 'License file must be 5 MB or smaller.';
+        } elseif ($hasNewLicense && !isset($allowedLicenseExtensions[$mime])) {
             $error = 'License must be a PNG, JPG, or PDF file.';
         } else {
             $pdo->exec("CREATE TABLE IF NOT EXISTS funeral_parlors (id INT AUTO_INCREMENT PRIMARY KEY, director_id INT NOT NULL, name VARCHAR(200) NOT NULL, location VARCHAR(255) NOT NULL, contact_number VARCHAR(50) NOT NULL, license_path VARCHAR(255) NOT NULL, status ENUM('pending','approved','rejected') DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (director_id) REFERENCES users(id) ON DELETE CASCADE)");

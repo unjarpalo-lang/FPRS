@@ -24,7 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES[$uploadField]) && $_FILES[$uploadField]['error'] === UPLOAD_ERR_OK) {
       $finfo = new finfo(FILEINFO_MIME_TYPE);
       $mime = $finfo->file($_FILES[$uploadField]['tmp_name']);
-      if (!isset($allowedUploadExtensions[$mime])) $errors[] = 'Invalid upload format. Use PNG, JPG or PDF.';
+      if (upload_too_large($_FILES[$uploadField])) $errors[] = 'Upload must be 5 MB or smaller.';
+      elseif (!isset($allowedUploadExtensions[$mime])) $errors[] = 'Invalid upload format. Use PNG, JPG or PDF.';
     } else {
       $errors[] = ($role === 'director') ? 'License upload is required for directors.' : 'Valid ID upload is required.';
     }

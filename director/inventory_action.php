@@ -36,7 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mime = $finfo->file($_FILES['image']['tmp_name']);
         $allowedImages = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
-        if (!isset($allowedImages[$mime])) {
+        if (upload_too_large($_FILES['image'])) {
+            $uploadError = 'Resource image must be 5 MB or smaller.';
+        } elseif (!isset($allowedImages[$mime])) {
             $uploadError = 'Resource image must be a PNG, JPG, or WEBP file.';
         } else {
             $filename = uniqid('inventory_', true) . '.' . $allowedImages[$mime];

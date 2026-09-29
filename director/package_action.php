@@ -15,6 +15,7 @@ $action = $_GET['action'] ?? 'list';
 function save_inclusion_image(?array $file): ?string {
     if (!$file || $file['error'] === UPLOAD_ERR_NO_FILE) return null;
     if ($file['error'] !== UPLOAD_ERR_OK) return null;
+    if (upload_too_large($file)) return null;
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime = $finfo->file($file['tmp_name']);
     $allowed = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
@@ -78,7 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mime = $finfo->file($_FILES['image']['tmp_name']);
         $allowedImages = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
-        if (!isset($allowedImages[$mime])) {
+        if (upload_too_large($_FILES['image'])) {
+            $uploadError = 'Package image must be 5 MB or smaller.';
+        } elseif (!isset($allowedImages[$mime])) {
             $uploadError = 'Package image must be a PNG, JPG, or WEBP file.';
         } else {
             $filename = uniqid('package_', true) . '.' . $allowedImages[$mime];
