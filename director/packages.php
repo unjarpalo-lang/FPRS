@@ -16,7 +16,17 @@ if ($user && $user['role'] === 'director') {
   $stmt->execute([$user['id'], $selectedParlor['id']]);
   $packages = $stmt->fetchAll();
 } else {
-  $packages = $pdo->query('SELECT * FROM packages ORDER BY created_at DESC')->fetchAll();
+  // A client must only ever see packages from an approved parlor whose
+  // director account is also approved — the same rule client/dashboard.php,
+  // package_details.php and contact.php already enforce. Without the join
+  // this listed packages belonging to pending and declined parlors.
+  $packages = $pdo->query(
+    "SELECT p.* FROM packages p
+     JOIN funeral_parlors fp ON fp.id = p.parlor_id
+     JOIN users u ON u.id = fp.director_id
+     WHERE fp.status = 'approved' AND u.status = 'approved'
+     ORDER BY p.created_at DESC"
+  )->fetchAll();
 }
 ?>
 <div class="space-y-5 py-2">
