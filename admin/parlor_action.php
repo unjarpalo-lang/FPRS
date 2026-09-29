@@ -23,6 +23,13 @@ if ($id && ($action === 'set_status' || isset($statusMap[$action]))) {
     exit;
 }
 
+if ($action === 'delete' && $id) {
+    delete_parlor_listing($pdo, $id);
+    $redirect = $_GET['redirect'] ?? (BASE_PATH . '/admin/dashboard.php');
+    header('Location: ' . $redirect);
+    exit;
+}
+
 if ($action === 'view' && $id) {
     $stmt = $pdo->prepare('SELECT * FROM funeral_parlors WHERE id=?');
     $stmt->execute([$id]);
@@ -43,7 +50,7 @@ if ($action === 'view' && $id) {
             </div>
 
             <div class="mt-6">
-              <a href="<?= BASE_PATH ?>/admin/manage_accounts.php" class="inline-flex items-center rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300">Back to accounts</a>
+              <a href="<?= BASE_PATH ?>/admin/dashboard.php" class="inline-flex items-center rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300">Back to dashboard</a>
             </div>
           </div>
         </div>

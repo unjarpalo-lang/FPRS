@@ -10,7 +10,7 @@ $id = (int)($_GET['id'] ?? 0);
 
 if ($action === 'delete' && $id) {
     if ($id === (int)$currentUser['id']) {
-        header('Location: ' . BASE_PATH . '/admin/users.php?error=self');
+        header('Location: ' . BASE_PATH . '/admin/dashboard.php?error=self');
         exit;
     }
     $target = $pdo->prepare('SELECT role FROM users WHERE id = ?');
@@ -20,7 +20,7 @@ if ($action === 'delete' && $id) {
     if ($targetRole === 'admin') {
         $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role='admin'")->fetchColumn();
         if ($adminCount <= 1) {
-            header('Location: ' . BASE_PATH . '/admin/users.php?error=lastadmin');
+            header('Location: ' . BASE_PATH . '/admin/dashboard.php?error=lastadmin');
             exit;
         }
     }
@@ -30,5 +30,5 @@ if ($action === 'delete' && $id) {
     }
 }
 
-header('Location: ' . BASE_PATH . '/admin/users.php');
+header('Location: ' . BASE_PATH . '/admin/dashboard.php');
 exit;

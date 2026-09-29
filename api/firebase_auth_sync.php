@@ -75,10 +75,9 @@ if (!$user) {
         echo json_encode(['ok' => false, 'error' => 'full_name is required.']);
         exit;
     }
-    // Matches register.php's existing rule: directors can log in immediately
-    // (their per-parlor approval status is the real client-visibility gate);
-    // clients still go through the admin approval queue.
-    $status = $role === 'director' ? 'approved' : 'pending';
+    // Matches register.php's rule: every role goes through the admin
+    // approval queue before they can log in.
+    $status = 'pending';
     // Firebase already verified the password/email — no local password hash
     // is meaningful, so store a random unusable placeholder for that column.
     $placeholderHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);

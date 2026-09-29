@@ -21,6 +21,11 @@ if (!defined('BASE_PATH') || !isset($package)) { http_response_code(404); exit; 
           <span class="font-medium text-stone-800"><?= htmlspecialchars($package['title']) ?></span>
           <?php if ($package['budget_flag']): ?><span class="f-pill bg-amber-100 text-amber-800"><?= htmlspecialchars($package['budget_flag']) ?></span><?php endif; ?>
           <?php if ($package['location_flag']): ?><span class="f-pill bg-sky-100 text-sky-800"><?= htmlspecialchars($package['location_flag']) ?></span><?php endif; ?>
+          <?php if (!empty($package['respondent_count'])): ?>
+            <span class="f-pill bg-emerald-100 text-emerald-800">★ <?= htmlspecialchars(number_format($package['performance_score'] * 5, 1)) ?> (<?= (int)$package['respondent_count'] ?> review<?= $package['respondent_count'] == 1 ? '' : 's' ?>)</span>
+          <?php else: ?>
+            <span class="f-pill bg-stone-100 text-stone-600">New — be the first to review</span>
+          <?php endif; ?>
         </div>
         <div class="text-sm text-stone-600">₱<?= htmlspecialchars(number_format($package['price'], 2)) ?> · <?= htmlspecialchars($package['inclusions']) ?></div>
         <div class="text-sm text-stone-500"><?= htmlspecialchars($package['parlor_name']) ?> — <?= htmlspecialchars($package['location']) ?> · <?= htmlspecialchars($package['contact_number']) ?></div>

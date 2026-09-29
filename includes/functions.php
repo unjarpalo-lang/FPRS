@@ -113,9 +113,15 @@ function location_dropdown_script(array $locations, string $idPrefix): void {
     <?php
 }
 
-/** Municipality parsed out of a "Barangay, Municipality" location string, or '' if unparseable. */
+/**
+ * Municipality parsed out of a location string. Accepts the usual
+ * "Barangay, Municipality" form (parlor records, which always have both)
+ * as well as a bare "Municipality" with no comma (a municipality-only
+ * client search preference, which has no barangay to combine with).
+ */
 function location_municipality(?string $location): string {
-    if (!$location || !str_contains($location, ',')) return '';
+    if (!$location) return '';
+    if (!str_contains($location, ',')) return trim($location);
     [, $municipality] = array_map('trim', explode(',', $location, 2));
     return $municipality;
 }
@@ -245,6 +251,25 @@ function is_in_service_area(?string $location): bool {
         }
     }
 
+    /**
+     * Deletes a parlor listing on its own, independent of its director
+     * account. parlor_feedback and parlor_survey_responses cascade via real
+     * FKs; packages/inventory_resources were added via ALTER TABLE without
+     * FKs, so those are cleaned up explicitly first to avoid orphaned rows.
+     */
+    function delete_parlor_listing(PDO $pdo, int $parlorId): void {
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare('DELETE FROM packages WHERE parlor_id = ?')->execute([$parlorId]);
+            $pdo->prepare('DELETE FROM inventory_resources WHERE parlor_id = ?')->execute([$parlorId]);
+            $pdo->prepare('DELETE FROM funeral_parlors WHERE id = ?')->execute([$parlorId]);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
     function selected_director_parlor(PDO $pdo, int $directorId): ?array {
         $parlorId = (int)($_SESSION['selected_parlor_id'] ?? 0);
         if (!$parlorId) return null;
@@ -273,6 +298,169 @@ function is_in_service_area(?string $location): bool {
             'rejected' => 'f-pill-rejected',
             default => 'f-pill-pending',
         };
+    }
+
+    /**
+     * Shared row for the dedicated Manage Client / Manage Director pages —
+     * same markup for both so the two pages stay pixel-identical. A declined
+     * entry is stripped down to a status pill only: zero management
+     * controls, not even View.
+     */
+    function render_admin_account_row(array $u): void {
+        $isDeclined = $u['status'] === 'rejected';
+        ?>
+        <div class="f-card-flat p-3.5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-medium text-stone-800"><?= htmlspecialchars($u['full_name']) ?></span>
+                <span class="f-pill <?= status_pill_class($u['status']) ?>"><?= status_label($u['status']) ?></span>
+              </div>
+              <div class="text-sm text-stone-500"><?= htmlspecialchars($u['email']) ?></div>
+              <?php if (!empty($u['phone'])): ?><div class="text-sm text-stone-600">Contact: <?= htmlspecialchars($u['phone']) ?></div><?php endif; ?>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <?php if ($isDeclined): ?>
+                <span class="text-xs italic text-stone-400">Declined — no actions available</span>
+              <?php else: ?>
+                <a href="<?= BASE_PATH ?>/admin/verify_user.php?action=view&id=<?= (int)$u['id'] ?>" class="rounded-full border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:bg-stone-50">View <?= $u['role'] === 'director' ? 'License' : 'ID' ?></a>
+                <?php if ($u['status'] !== 'approved'): ?>
+                  <a href="<?= BASE_PATH ?>/admin/verify_user.php?action=approve&id=<?= (int)$u['id'] ?>" class="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-500">Approve</a>
+                <?php endif; ?>
+                <a href="<?= BASE_PATH ?>/admin/verify_user.php?action=reject&id=<?= (int)$u['id'] ?>" class="rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-500">Decline</a>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+        <?php
+    }
+
+    /** Manage Parlor row — same layout/classes as render_admin_account_row() above, different fields. */
+    function render_admin_parlor_row(array $p): void {
+        $isDeclined = $p['status'] === 'rejected';
+        ?>
+        <div class="f-card-flat p-3.5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-medium text-stone-800"><?= htmlspecialchars($p['name']) ?></span>
+                <span class="f-pill <?= status_pill_class($p['status']) ?>"><?= status_label($p['status']) ?></span>
+              </div>
+              <div class="text-sm text-stone-500"><?= htmlspecialchars($p['location']) ?> · <?= htmlspecialchars($p['contact_number']) ?></div>
+              <div class="text-sm text-stone-600">Director: <?= htmlspecialchars($p['director_name']) ?></div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <?php if ($isDeclined): ?>
+                <span class="text-xs italic text-stone-400">Declined — no actions available</span>
+              <?php else: ?>
+                <a href="<?= BASE_PATH ?>/admin/parlor_action.php?action=view&id=<?= (int)$p['id'] ?>" class="rounded-full border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:bg-stone-50">View License</a>
+                <?php if ($p['status'] !== 'approved'): ?>
+                  <a href="<?= BASE_PATH ?>/admin/parlor_action.php?action=approve&id=<?= (int)$p['id'] ?>" class="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-500">Approve</a>
+                <?php endif; ?>
+                <?php if ($p['status'] !== 'pending'): ?>
+                  <a href="<?= BASE_PATH ?>/admin/parlor_action.php?action=pending&id=<?= (int)$p['id'] ?>" class="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-amber-400">Set to Pending</a>
+                <?php endif; ?>
+                <a href="<?= BASE_PATH ?>/admin/parlor_action.php?action=reject&id=<?= (int)$p['id'] ?>" class="rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-500">Decline</a>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Manage All Accounts row for a user (client/director/admin) — approved
+     * only by construction of the page's query. Clients/directors can have
+     * their submitted ID/license viewed; delete is guarded (self, last
+     * remaining admin) via the shared delete-confirmation modal.
+     */
+    function render_admin_all_accounts_user_row(array $u, bool $isSelf, bool $isLastAdmin): void {
+        ?>
+        <div class="f-card-flat p-3.5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-medium text-stone-800"><?= htmlspecialchars($u['full_name']) ?></span>
+                <span class="f-pill bg-funeral-100 text-funeral-800"><?= htmlspecialchars(ucfirst($u['role'])) ?></span>
+                <span class="f-pill <?= status_pill_class($u['status']) ?>"><?= status_label($u['status']) ?></span>
+              </div>
+              <div class="text-sm text-stone-500"><?= htmlspecialchars($u['email']) ?><?= $u['phone'] ? ' · ' . htmlspecialchars($u['phone']) : '' ?></div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <?php if ($u['role'] !== 'admin'): ?>
+                <a href="<?= BASE_PATH ?>/admin/verify_user.php?action=view&id=<?= (int)$u['id'] ?>" class="rounded-full border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:bg-stone-50">View <?= $u['role'] === 'director' ? 'License' : 'ID' ?></a>
+              <?php endif; ?>
+              <?php if ($isSelf): ?>
+                <span class="text-xs text-stone-400">This is your account</span>
+              <?php elseif ($isLastAdmin): ?>
+                <span class="text-xs text-stone-400">Last remaining admin</span>
+              <?php else: ?>
+                <button type="button" onclick="openDeleteModal('<?= BASE_PATH ?>/admin/user_action.php?action=delete&id=<?= (int)$u['id'] ?>', '<?= htmlspecialchars(addslashes($u['full_name']), ENT_QUOTES) ?>')" class="rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-500">Delete</button>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Manage All Accounts row for a parlor — approved only by construction.
+     * A real standalone delete (independent of its director account), via
+     * the same shared delete-confirmation modal, is the only action here.
+     */
+    function render_admin_all_accounts_parlor_row(array $p): void {
+        ?>
+        <div class="f-card-flat p-3.5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-medium text-stone-800"><?= htmlspecialchars($p['name']) ?></span>
+                <span class="f-pill bg-funeral-100 text-funeral-800">Parlor</span>
+                <span class="f-pill <?= status_pill_class($p['status']) ?>"><?= status_label($p['status']) ?></span>
+              </div>
+              <div class="text-sm text-stone-500"><?= htmlspecialchars($p['location']) ?> · <?= htmlspecialchars($p['contact_number']) ?></div>
+              <div class="text-sm text-stone-500">Director: <?= htmlspecialchars($p['director_name']) ?></div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" onclick="openDeleteModal('<?= BASE_PATH ?>/admin/parlor_action.php?action=delete&id=<?= (int)$p['id'] ?>', '<?= htmlspecialchars(addslashes($p['name']), ENT_QUOTES) ?>')" class="rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-500">Delete</button>
+            </div>
+          </div>
+        </div>
+        <?php
+    }
+
+    /** Shared delete-confirmation modal + JS — include once per page that calls openDeleteModal(). */
+    function render_delete_confirmation_modal(): void {
+        ?>
+        <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4" style="display:none;">
+          <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lift">
+            <div class="mb-3 flex items-center gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+              </span>
+              <h3 class="text-lg font-semibold text-funeral-800">Delete this?</h3>
+            </div>
+            <p class="text-sm text-stone-600">You're about to permanently delete <strong id="delete-modal-name" class="text-stone-800"></strong>. This cannot be undone.</p>
+            <div class="mt-5 flex justify-end gap-2">
+              <button type="button" onclick="closeDeleteModal()" class="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50">Cancel</button>
+              <a id="delete-modal-confirm-link" href="#" class="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500">Delete</a>
+            </div>
+          </div>
+        </div>
+        <script>
+        function openDeleteModal(url, name) {
+          document.getElementById('delete-modal-name').textContent = name;
+          document.getElementById('delete-modal-confirm-link').setAttribute('href', url);
+          document.getElementById('delete-modal').style.display = 'flex';
+        }
+        function closeDeleteModal() {
+          document.getElementById('delete-modal').style.display = 'none';
+        }
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') closeDeleteModal();
+        });
+        </script>
+        <?php
     }
 
     /** Links a SQL users row to its Firebase Auth account. Additive — the existing

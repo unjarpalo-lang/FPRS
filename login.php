@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/functions.php';
 $error = '';
+$declined = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'] ?? '';
@@ -12,9 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user['password'])) {
-        if ($user['status'] !== 'approved') {
-            $error = 'Account not approved yet.';
-        } else {
+        if ($user['status'] === 'approved') {
             // Regenerate the session ID on every successful login so a session
             // ID an attacker fixed/obtained before authentication can't be
             // reused post-login (session fixation).
@@ -22,6 +21,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_id'] = $user['id'];
             header('Location: ' . BASE_PATH . '/');
             exit;
+        } elseif ($user['status'] === 'rejected') {
+            $declined = true;
+            // Password was just verified above, so this is a legitimate
+            // recovery intent for this exact account — stash it so
+            // reregister.php can delete precisely this row without ever
+            // exposing its id in a URL or re-collecting the password.
+            $_SESSION['declined_reregister_id'] = (int)$user['id'];
+        } else {
+            $error = 'Account not approved yet.';
         }
     } else {
         $error = 'Invalid credentials.';
@@ -44,26 +52,41 @@ include __DIR__ . '/includes/header.php';
     </div>
 
     <div class="bg-white/90 p-6 sm:p-10">
-      <p class="f-eyebrow mb-2">Welcome back</p>
-      <h2 class="mb-6 text-3xl font-bold text-funeral-800">Login</h2>
+      <?php if ($declined): ?>
+        <div class="flex flex-col items-center py-2 text-center">
+          <span class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+          </span>
+          <p class="f-eyebrow mb-2">Account declined</p>
+          <h2 class="mb-2 text-2xl font-bold text-funeral-800">This account wasn't approved</h2>
+          <p class="mx-auto max-w-sm text-sm text-stone-600">An admin reviewed this registration and declined it, so you can't sign in with it. You're welcome to submit a fresh registration, or head back to the main page.</p>
+          <div class="mt-6 flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+            <a href="<?= BASE_PATH ?>/reregister.php" class="inline-flex items-center justify-center gap-2 rounded-full bg-funeral-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-funeral-500/20 transition hover:bg-funeral-400">Register Again</a>
+            <a href="<?= BASE_PATH ?>/" class="inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-50">Go Back to Main Page</a>
+          </div>
+        </div>
+      <?php else: ?>
+        <p class="f-eyebrow mb-2">Welcome back</p>
+        <h2 class="mb-6 text-3xl font-bold text-funeral-800">Login</h2>
 
-      <?php if ($error): ?>
-        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><?= htmlspecialchars($error) ?></div>
+        <?php if ($error): ?>
+          <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
+
+        <form method="post" class="space-y-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Email</label>
+            <input name="email" type="email" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" class="w-full rounded-xl border border-stone-300 bg-stone-50 px-4 py-3 outline-none transition focus:border-funeral-500 focus:ring-2 focus:ring-funeral-200" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Password</label>
+            <input name="password" type="password" required class="w-full rounded-xl border border-stone-300 bg-stone-50 px-4 py-3 outline-none transition focus:border-funeral-500 focus:ring-2 focus:ring-funeral-200" />
+          </div>
+          <button type="submit" class="w-full rounded-full bg-funeral-500 px-5 py-3 font-semibold text-white shadow-lg shadow-funeral-500/20 transition hover:bg-funeral-400">Login</button>
+        </form>
+
+        <p class="mt-6 text-center text-sm text-stone-600">New here? <a href="<?= BASE_PATH ?>/register.php" class="font-semibold text-funeral-700 hover:text-funeral-600">Create an account</a></p>
       <?php endif; ?>
-
-      <form method="post" class="space-y-4">
-        <div>
-          <label class="mb-1 block text-sm font-medium text-stone-700">Email</label>
-          <input name="email" type="email" required class="w-full rounded-xl border border-stone-300 bg-stone-50 px-4 py-3 outline-none transition focus:border-funeral-500 focus:ring-2 focus:ring-funeral-200" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-stone-700">Password</label>
-          <input name="password" type="password" required class="w-full rounded-xl border border-stone-300 bg-stone-50 px-4 py-3 outline-none transition focus:border-funeral-500 focus:ring-2 focus:ring-funeral-200" />
-        </div>
-        <button type="submit" class="w-full rounded-full bg-funeral-500 px-5 py-3 font-semibold text-white shadow-lg shadow-funeral-500/20 transition hover:bg-funeral-400">Login</button>
-      </form>
-
-      <p class="mt-6 text-center text-sm text-stone-600">New here? <a href="<?= BASE_PATH ?>/register.php" class="font-semibold text-funeral-700 hover:text-funeral-600">Create an account</a></p>
     </div>
   </div>
 </div>

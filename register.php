@@ -9,7 +9,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
   $role = ($_POST['role'] ?? 'client') === 'director' ? 'director' : 'client';
-  $funeral_name = trim($_POST['funeral_name'] ?? '');
 
     if (!$full || !$email || !$password) $errors[] = 'Please complete required fields.';
     if ($password !== $confirmPassword) $errors[] = 'Passwords do not match.';
@@ -30,10 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $errors[] = ($role === 'director') ? 'License upload is required for directors.' : 'Valid ID upload is required.';
     }
 
-    if ($role === 'director' && !$funeral_name) {
-      $errors[] = 'Funeral name is required for director registration.';
-    }
-
     if (empty($errors)) {
         $pdo = pdo_connect();
         $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?');
@@ -45,7 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $fname = uniqid($uploadField . '_', true) . '.' . $allowedUploadExtensions[$mime];
             move_uploaded_file($_FILES[$uploadField]['tmp_name'], $uploadPath . $fname);
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            // ensure columns exist: funeral_name and license_path
+            // ensure columns exist: funeral_name (legacy column, kept for
+            // schema compatibility with older data/imports; no live page
+            // reads it anymore) and license_path
             $col = $pdo->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'funeral_name'");
             $col->execute();
             if (!$col->fetch()) {
@@ -59,15 +56,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // prepare paths
             $valid_id_path = $role === 'client' ? 'uploads/'.$fname : null;
             $license_path = $role === 'director' ? 'uploads/'.$fname : null;
-            // Directors can log in and manage their account immediately — approval
-            // is enforced per-parlor (client visibility), not by gating login itself.
-            // Clients still go through the existing pending-until-approved login gate.
-            $userStatus = $role === 'director' ? 'approved' : 'pending';
+            // Both roles go through the same pending-until-approved login gate;
+            // directors additionally register a funeral parlor after their
+            // account is approved, and that listing needs its own approval too.
+            $userStatus = 'pending';
             $ins = $pdo->prepare('INSERT INTO users (full_name,email,phone,password,role,valid_id_path,license_path,funeral_name,status) VALUES (?,?,?,?,?,?,?,?,?)');
-            $ins->execute([$full,$email,$phone,$hash,$role,$valid_id_path,$license_path, $role === 'director' ? $funeral_name : null,$userStatus]);
-            $success = $role === 'director'
-                ? 'Registration complete — you can log in right away. Register your funeral parlor next; its listing stays pending until an admin approves it.'
-                : 'Registration submitted. Awaiting admin approval.';
+            $ins->execute([$full,$email,$phone,$hash,$role,$valid_id_path,$license_path,null,$userStatus]);
+            $success = 'Registration submitted. Awaiting admin approval.';
         }
     }
 }
@@ -123,10 +118,6 @@ $postedRole = ($_POST['role'] ?? 'client') === 'director' ? 'director' : 'client
               <label class="mb-1 block text-sm font-medium text-stone-700">Phone</label>
               <input name="phone" class="w-full rounded-xl border border-stone-300 bg-stone-50 px-4 py-3 outline-none transition focus:border-funeral-500 focus:ring-2 focus:ring-funeral-200" />
             </div>
-          </div>
-          <div id="funeral-name-field">
-            <label class="mb-1 block text-sm font-medium text-stone-700">Funeral home name</label>
-            <input name="funeral_name" class="w-full rounded-xl border border-stone-300 bg-stone-50 px-4 py-3 outline-none transition focus:border-funeral-500 focus:ring-2 focus:ring-funeral-200" />
           </div>
         </div>
       </div>
@@ -189,7 +180,6 @@ document.querySelectorAll('.password-toggle').forEach(button => {
 
 (function () {
   const options = document.querySelectorAll('#role-toggle .role-option');
-  const funeralNameField = document.getElementById('funeral-name-field');
   const validIdField = document.getElementById('valid-id-field');
   const licenseField = document.getElementById('license-field');
 
@@ -202,7 +192,6 @@ document.querySelectorAll('.password-toggle').forEach(button => {
       opt.classList.toggle('bg-white', !isActive);
     });
     const isDirector = role === 'director';
-    funeralNameField.classList.toggle('hidden', !isDirector);
     validIdField.classList.toggle('hidden', isDirector);
     licenseField.classList.toggle('hidden', !isDirector);
   }

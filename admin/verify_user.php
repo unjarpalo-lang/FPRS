@@ -7,12 +7,12 @@ $action = $_GET['action'] ?? 'list';
 if (!isset($_GET['id'])) { header('Location: ' . BASE_PATH . '/admin/dashboard.php'); exit; }
 $id = (int)$_GET['id'];
 
-if ($action === 'approve') {
-    $pdo->prepare('UPDATE users SET status = ? WHERE id = ?')->execute(['approved',$id]);
-    header('Location: ' . BASE_PATH . '/admin/dashboard.php'); exit;
-}
-if ($action === 'reject') {
-    $pdo->prepare('UPDATE users SET status = ? WHERE id = ?')->execute(['rejected',$id]);
+// Unified status control, mirroring parlor_action.php: an approved or
+// declined account can be moved back to any of the three states from the
+// dashboard, not just approved-once-then-frozen.
+$statusMap = ['approve' => 'approved', 'pending' => 'pending', 'reject' => 'rejected'];
+if ($id && isset($statusMap[$action])) {
+    $pdo->prepare('UPDATE users SET status = ? WHERE id = ?')->execute([$statusMap[$action], $id]);
     header('Location: ' . BASE_PATH . '/admin/dashboard.php'); exit;
 }
 
@@ -41,8 +41,10 @@ if ($action === 'view') {
         <?php endif; ?>
 
         <div class="mt-6 flex flex-wrap gap-2">
-          <a href="<?= BASE_PATH ?>/admin/verify_user.php?action=approve&id=<?= $id ?>" class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">Approve</a>
-          <a href="<?= BASE_PATH ?>/admin/verify_user.php?action=reject&id=<?= $id ?>" class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300">Decline</a>
+          <?php if ($user['status'] !== 'approved'): ?>
+            <a href="<?= BASE_PATH ?>/admin/verify_user.php?action=approve&id=<?= $id ?>" class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">Approve</a>
+            <a href="<?= BASE_PATH ?>/admin/verify_user.php?action=reject&id=<?= $id ?>" class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300">Decline</a>
+          <?php endif; ?>
           <a href="<?= BASE_PATH ?>/admin/dashboard.php" class="inline-flex items-center rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300">Back</a>
         </div>
       </div>
