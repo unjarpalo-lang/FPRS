@@ -24,9 +24,20 @@ if (!$package) {
 ?>
 <div class="mx-auto max-w-3xl py-6 sm:py-10">
   <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-    <a href="<?= BASE_PATH ?>/client/contact.php?package_id=<?= (int)$package['id'] ?>&director_id=<?= (int)$package['parlor_id'] ?>" class="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300">
+    <?php
+      // This page is reached both from contact.php and straight from the
+      // search results ("View Package"). Only offer to go "back" to the
+      // contact page when that is actually where the client came from —
+      // otherwise send them back to their search.
+      $cameFromContact = ($_GET['from'] ?? '') === 'contact';
+      $backHref = $cameFromContact
+          ? BASE_PATH . '/client/contact.php?package_id=' . (int)$package['id'] . '&director_id=' . (int)$package['parlor_id']
+          : BASE_PATH . '/client/dashboard.php';
+      $backLabel = $cameFromContact ? 'Back to contact details' : 'Back to search results';
+    ?>
+    <a href="<?= htmlspecialchars($backHref) ?>" class="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300">
       <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 15L7.5 10L12.5 5" /></svg>
-      Back to contact details
+      <?= htmlspecialchars($backLabel) ?>
     </a>
     <button type="button" onclick="window.print()" class="inline-flex items-center gap-1 rounded-lg bg-funeral-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-funeral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-funeral-300">
       <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>

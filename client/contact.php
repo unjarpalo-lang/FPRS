@@ -50,7 +50,7 @@ $parlor = $parlorStmt->fetch();
         <div class="mt-1 text-2xl font-bold text-funeral-700">₱<?= htmlspecialchars(number_format((float)$package['price'], 2)) ?></div>
         <div class="mt-4 whitespace-pre-line text-sm leading-6 text-stone-600"><?= htmlspecialchars($package['inclusions'] ?: 'The provider can customize this service with you.') ?></div>
 
-        <a href="<?= BASE_PATH ?>/client/package_details.php?package_id=<?= (int)$package['id'] ?>" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-funeral-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-funeral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-funeral-300 sm:w-auto">
+        <a href="<?= BASE_PATH ?>/client/package_details.php?package_id=<?= (int)$package['id'] ?>&amp;from=contact" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-funeral-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-funeral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-funeral-300 sm:w-auto">
           View Full Package Inclusions &amp; Details
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
