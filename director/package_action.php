@@ -62,7 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     $inclusions = implode(', ', $selectedServices);
-    $price = $_POST['price'] ?? 0;
+    // Never store a negative or non-numeric price: it would be shown to
+    // clients as a negative peso amount and would skew budget matching.
+    $price = max(0, (float)($_POST['price'] ?? 0));
 
     $imagePath = null;
     $existingId = $_POST['id'] ?? null;
