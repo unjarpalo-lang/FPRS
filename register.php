@@ -11,6 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $role = ($_POST['role'] ?? 'client') === 'director' ? 'director' : 'client';
 
     if (!$full || !$email || !$password) $errors[] = 'Please complete required fields.';
+    // type="email" is client-side only and is trivially bypassed by posting
+    // directly, so the format has to be checked here too.
+    if ($email && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Please enter a valid email address.';
     if ($password !== $confirmPassword) $errors[] = 'Passwords do not match.';
 
     // for clients we require a valid ID; for directors we require a license upload
@@ -76,7 +79,7 @@ $postedRole = ($_POST['role'] ?? 'client') === 'director' ? 'director' : 'client
     <p class="mb-6 text-sm text-stone-600">A few details now save time later. Your submission is reviewed gently by our team before you can sign in.</p>
 
     <?php if (!empty($errors)): ?>
-      <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><?= htmlspecialchars(implode('<br>', $errors)) ?></div>
+      <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><?= implode('<br>', array_map('htmlspecialchars', $errors)) ?></div>
     <?php endif; ?>
     <?php if (!empty($success)): ?>
       <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"><?= htmlspecialchars($success) ?></div>
