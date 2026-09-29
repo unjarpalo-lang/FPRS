@@ -35,7 +35,7 @@ $shops = $pdo->query('SELECT * FROM shops ORDER BY created_at DESC')->fetchAll()
           </div>
           <div class="flex gap-2">
             <a href="shop_action.php?action=edit&id=<?=$s['id']?>" class="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-500 text-white text-sm font-medium transition hover:bg-amber-400">Edit</a>
-            <a href="shop_action.php?action=delete&id=<?=$s['id']?>" class="inline-flex items-center px-3 py-1.5 rounded-full bg-red-600 text-white text-sm font-medium transition hover:bg-red-500" onclick="return confirm('Delete this shop?');">Delete</a>
+            <a href="shop_action.php?action=delete&id=<?=(int)$s['id']?>&token=<?=urlencode(csrf_token())?>" class="inline-flex items-center px-3 py-1.5 rounded-full bg-red-600 text-white text-sm font-medium transition hover:bg-red-500" onclick="return confirm('Delete this shop?');">Delete</a>
           </div>
         </div>
       <?php endforeach; ?>

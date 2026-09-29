@@ -61,7 +61,7 @@ $items = $stmt->fetchAll();
             </div>
             <div class="mt-3 flex gap-2">
               <a href="inventory_action.php?action=edit&id=<?=$it['id']?>" class="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-500 text-white text-sm font-medium transition hover:bg-amber-400">Edit</a>
-              <a href="inventory_action.php?action=delete&id=<?=$it['id']?>" class="inline-flex items-center px-3 py-1.5 rounded-full bg-red-600 text-white text-sm font-medium transition hover:bg-red-500" onclick="return confirm('Delete this resource?');">Delete</a>
+              <a href="inventory_action.php?action=delete&id=<?=(int)$it['id']?>&token=<?=urlencode(csrf_token())?>" class="inline-flex items-center px-3 py-1.5 rounded-full bg-red-600 text-white text-sm font-medium transition hover:bg-red-500" onclick="return confirm('Delete this resource?');">Delete</a>
             </div>
           </div>
         </div>

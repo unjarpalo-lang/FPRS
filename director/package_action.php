@@ -131,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 if ($action === 'delete' && isset($_GET['id'])) {
+    require_csrf_token($_GET['token'] ?? null);
     $stmt = $pdo->prepare('DELETE FROM packages WHERE id = ? AND director_id = ? AND parlor_id = ?');
     $stmt->execute([$_GET['id'],$user['id'],$selectedParlor['id']]);
     header('Location: ' . BASE_PATH . '/director/packages.php'); exit;

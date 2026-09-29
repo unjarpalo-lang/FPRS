@@ -47,6 +47,35 @@ function require_any_role(array $roles) {
     if (!$user || !in_array($user['role'],$roles,true)) { http_response_code(403); echo "Forbidden"; exit; }
 }
 
+/**
+ * Per-session CSRF token, used to protect the irreversible delete actions.
+ *
+ * The session cookie is already SameSite=Strict (config/db.php), which is
+ * what stops a cross-site page triggering these GET action links. The token
+ * is the second layer, and it also stops a link prefetcher or an accelerator
+ * quietly firing a delete that happens to sit in browser history.
+ */
+function csrf_token(): string {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/** Constant-time check of a submitted CSRF token against the session's. */
+function csrf_check(?string $token): bool {
+    return !empty($_SESSION['csrf_token']) && is_string($token) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+/** Rejects a state-changing request that is missing a valid CSRF token. */
+function require_csrf_token(?string $token): void {
+    if (!csrf_check($token)) {
+        http_response_code(403);
+        echo 'Invalid or expired request token. Please go back and try again.';
+        exit;
+    }
+}
+
 /** Largest accepted upload, in bytes. Applied on top of PHP's own ini limits. */
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
@@ -421,7 +450,7 @@ function is_in_service_area(?string $location): bool {
               <?php elseif ($isLastAdmin): ?>
                 <span class="text-xs text-stone-400">Last remaining admin</span>
               <?php else: ?>
-                <button type="button" onclick="openDeleteModal('<?= BASE_PATH ?>/admin/user_action.php?action=delete&id=<?= (int)$u['id'] ?>', '<?= htmlspecialchars(addslashes($u['full_name']), ENT_QUOTES) ?>')" class="rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-500">Delete</button>
+                <button type="button" onclick="openDeleteModal('<?= BASE_PATH ?>/admin/user_action.php?action=delete&id=<?= (int)$u['id'] ?>&token=<?= urlencode(csrf_token()) ?>', '<?= htmlspecialchars(addslashes($u['full_name']), ENT_QUOTES) ?>')" class="rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-500">Delete</button>
               <?php endif; ?>
             </div>
           </div>
@@ -448,7 +477,7 @@ function is_in_service_area(?string $location): bool {
               <div class="text-sm text-stone-500">Director: <?= htmlspecialchars($p['director_name']) ?></div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <button type="button" onclick="openDeleteModal('<?= BASE_PATH ?>/admin/parlor_action.php?action=delete&id=<?= (int)$p['id'] ?>', '<?= htmlspecialchars(addslashes($p['name']), ENT_QUOTES) ?>')" class="rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-500">Delete</button>
+              <button type="button" onclick="openDeleteModal('<?= BASE_PATH ?>/admin/parlor_action.php?action=delete&id=<?= (int)$p['id'] ?>&token=<?= urlencode(csrf_token()) ?>', '<?= htmlspecialchars(addslashes($p['name']), ENT_QUOTES) ?>')" class="rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-500">Delete</button>
             </div>
           </div>
         </div>

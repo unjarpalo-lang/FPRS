@@ -9,6 +9,7 @@ $action = $_GET['action'] ?? '';
 $id = (int)($_GET['id'] ?? 0);
 
 if ($action === 'delete' && $id) {
+    require_csrf_token($_GET['token'] ?? null);
     if ($id === (int)$currentUser['id']) {
         header('Location: ' . BASE_PATH . '/admin/dashboard.php?error=self');
         exit;

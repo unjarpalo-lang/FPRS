@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if ($action === 'delete' && isset($_GET['id'])) {
+  require_csrf_token($_GET['token'] ?? null);
   $pdo->prepare('DELETE FROM shops WHERE id = ?')->execute([$_GET['id']]); header('Location: ' . BASE_PATH . '/admin/shops.php'); exit;
 }
 

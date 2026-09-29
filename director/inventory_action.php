@@ -64,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 if ($action === 'delete' && isset($_GET['id'])) {
+  require_csrf_token($_GET['token'] ?? null);
   $pdo->prepare('DELETE FROM inventory_resources WHERE id = ? AND director_id = ? AND parlor_id = ?')->execute([$_GET['id'],$user['id'],$selectedParlor['id']]);
   header('Location: ' . BASE_PATH . '/director/inventory.php'); exit;
 }

@@ -24,6 +24,7 @@ if ($id && ($action === 'set_status' || isset($statusMap[$action]))) {
 }
 
 if ($action === 'delete' && $id) {
+    require_csrf_token($_GET['token'] ?? null);
     delete_parlor_listing($pdo, $id);
     $redirect = $_GET['redirect'] ?? (BASE_PATH . '/admin/dashboard.php');
     header('Location: ' . $redirect);

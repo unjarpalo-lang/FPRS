@@ -67,7 +67,7 @@ if ($user && $user['role'] === 'director') {
             <?php if ($user && $user['role'] === 'director'): ?>
               <div class="mt-3 flex gap-2">
                 <a href="package_action.php?action=edit&id=<?=$p['id']?>" class="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-500 text-white text-sm font-medium transition hover:bg-amber-400">Edit</a>
-                <a href="package_action.php?action=delete&id=<?=$p['id']?>" class="inline-flex items-center px-3 py-1.5 rounded-full bg-red-600 text-white text-sm font-medium transition hover:bg-red-500" onclick="return confirm('Delete this package?');">Delete</a>
+                <a href="package_action.php?action=delete&id=<?=(int)$p['id']?>&token=<?=urlencode(csrf_token())?>" class="inline-flex items-center px-3 py-1.5 rounded-full bg-red-600 text-white text-sm font-medium transition hover:bg-red-500" onclick="return confirm('Delete this package?');">Delete</a>
               </div>
             <?php endif; ?>
           </div>
