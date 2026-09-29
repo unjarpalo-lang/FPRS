@@ -90,24 +90,25 @@ $hasSkyVideo = is_file($skyVideoFile);
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
       <div class="flex h-16 items-center justify-between">
         <?php
-          $backUrl = $_SESSION['last_dashboard'] ?? null;
+          $navUser = is_logged_in() ? current_user() : null;
           $currentPage = basename($_SERVER['PHP_SELF'] ?? '');
           $noBackPages = ['login.php', 'register.php', 'index.php', 'dashboard.php'];
           $showBack = !in_array($currentPage, $noBackPages, true);
+          // Always resolve Back to a real destination. history.back() was the
+          // fallback here, but it is a dead button whenever this page is the
+          // first entry in the tab's history (bookmark, shared link, or a
+          // session that never passed through a dashboard).
+          $backUrl = $_SESSION['last_dashboard'] ?? null;
+          if (!$backUrl || basename($backUrl) === $currentPage) {
+              $backUrl = $navUser ? BASE_PATH . '/' . $navUser['role'] . '/dashboard.php' : BASE_PATH . '/';
+          }
         ?>
         <div class="flex items-center gap-3">
           <?php if ($showBack): ?>
-            <?php if ($backUrl && basename($backUrl) !== $currentPage): ?>
-              <a href="<?= htmlspecialchars($backUrl) ?>" class="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-stone-100 transition hover:bg-white/15">
-                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 15L7.5 10L12.5 5" /></svg>
-                Back
-              </a>
-            <?php else: ?>
-              <button onclick="history.back()" class="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-stone-100 transition hover:bg-white/15">
-                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 15L7.5 10L12.5 5" /></svg>
-                Back
-              </button>
-            <?php endif; ?>
+            <a href="<?= htmlspecialchars($backUrl) ?>" class="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-stone-100 transition hover:bg-white/15">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 15L7.5 10L12.5 5" /></svg>
+              Back
+            </a>
           <?php endif; ?>
           <a href="<?php echo BASE_PATH; ?>" class="group flex items-center gap-2.5">
             <span class="flex h-9 w-9 items-center justify-center rounded-full bg-funeral-400/90 text-funeral-900 shadow-inner transition group-hover:bg-funeral-300">
@@ -120,7 +121,6 @@ $hasSkyVideo = is_file($skyVideoFile);
           </a>
         </div>
 
-        <?php $navUser = is_logged_in() ? current_user() : null; ?>
         <nav class="hidden items-center gap-1 md:flex">
           <a href="<?= BASE_PATH ?>/about.php" class="rounded-full px-3 py-2 text-sm font-medium text-stone-200 transition hover:bg-white/10 hover:text-white">About</a>
           <?php if($navUser): ?>

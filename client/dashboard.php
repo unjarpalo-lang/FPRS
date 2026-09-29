@@ -225,10 +225,10 @@ if ($searchMunicipality !== '' && $searchBarangay === '') {
       <h2 class="text-3xl font-bold text-funeral-800">Welcome, <?= htmlspecialchars($user['full_name']) ?></h2>
       <p class="mt-1 text-sm text-stone-600">Search by budget, location, and religion — we'll show what fits, and what's close.</p>
     </div>
-    <button onclick="history.back()" class="inline-flex shrink-0 items-center gap-1 self-start rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50 sm:self-auto">
+    <a href="<?= BASE_PATH ?>/" class="inline-flex shrink-0 items-center gap-1 self-start rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50 sm:self-auto">
       <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 15L7.5 10L12.5 5" /></svg>
       Back
-    </button>
+    </a>
   </div>
 
   <div class="f-card p-6 sm:p-8">
