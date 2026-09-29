@@ -13,11 +13,28 @@ function current_user(): ?array {
     return $stmt->fetch() ?: null;
 }
 
+/**
+ * Ends the session of an account an admin has since set back to pending or
+ * declined. login.php already gates on status, but that check only runs at
+ * sign-in: without this, a user who is already signed in when an admin
+ * declines them keeps full access until they happen to log out. Only the two
+ * explicit revocation states are blocked, so an unexpected/blank status can
+ * never lock a working account (notably an admin) out of the system.
+ */
+function enforce_active_account(?array $user): void {
+    if ($user && in_array($user['status'] ?? '', ['pending', 'rejected'], true)) {
+        session_unset();
+        session_destroy();
+        header('Location: ' . BASE_PATH . '/login.php'); exit;
+    }
+}
+
 function require_role(string $role) {
     if (!is_logged_in()) {
         header('Location: ' . BASE_PATH . '/login.php'); exit;
     }
     $user = current_user();
+    enforce_active_account($user);
     if (!$user || $user['role'] !== $role) {
         http_response_code(403); echo "Forbidden"; exit;
     }
@@ -26,6 +43,7 @@ function require_role(string $role) {
 function require_any_role(array $roles) {
     if (!is_logged_in()) { header('Location: ' . BASE_PATH . '/login.php'); exit; }
     $user = current_user();
+    enforce_active_account($user);
     if (!$user || !in_array($user['role'],$roles,true)) { http_response_code(403); echo "Forbidden"; exit; }
 }
 
