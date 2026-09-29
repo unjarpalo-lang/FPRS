@@ -9,10 +9,10 @@ $directorId = (int)($_GET['director_id'] ?? 0);
 $parlorStmt = $pdo->prepare("SELECT fp.name, fp.location, fp.contact_number, u.full_name, u.email FROM funeral_parlors fp JOIN users u ON u.id = fp.director_id WHERE fp.id = ? AND fp.status = 'approved' AND u.status = 'approved'");
 $parlorStmt->execute([$directorId]);
 $parlor = $parlorStmt->fetch();
-if (!$parlor) {
-    $parlorStmt = $pdo->query("SELECT fp.name, fp.location, fp.contact_number, u.full_name, u.email FROM funeral_parlors fp JOIN users u ON u.id = fp.director_id WHERE fp.status = 'approved' AND u.status = 'approved' ORDER BY fp.name ASC LIMIT 1");
-    $parlor = $parlorStmt->fetch();
-}
+  // No fallback here on purpose. This used to drop back to "the first
+  // approved parlor in the table" when the requested one did not resolve,
+  // which showed the client a completely unrelated parlor's name, address
+  // and phone number as though it were the one they asked for.
   if (!$parlor) {
     http_response_code(404);
     echo '<div class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">Funeral parlor not found.</div>';
